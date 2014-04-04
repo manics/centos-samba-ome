@@ -1,9 +1,9 @@
 # Set --with testsuite or %bcond_without to run the Samba torture testsuite.
 %bcond_with testsuite
 
-%define main_release 3
+%define main_release 31
 
-%define samba_version 4.1.0
+%define samba_version 4.1.1
 %define talloc_version 2.0.8
 %define ntdb_version 0.9
 %define tdb_version 1.2.12
@@ -85,6 +85,37 @@ Source6: samba.pamd
 Source200: README.dc
 Source201: README.downgrade
 
+Patch0: samba-4.1.1-Fix-memset-in-ntdb.patch
+Patch1: samba-4.1.0-upn.patch
+Patch2: samba-4.1.2-fix_strict_aliasing.patch
+Patch3: samba-4.1.2-doc.patch
+Patch4: samba-4.1.3-fix_grp_name_sub_in_template_homedir.patch
+Patch5: samba-4.1.3-CVE-2013-4408.patch
+Patch6: samba-4.1.3-fix_build_warnings.patch
+Patch7: samba-4.1.2-winbind_cache_keysize.patch
+Patch8: samba-4.1.3-CVE-2012-6150.patch
+Patch9: samba-4.1.3-winbind_debug.patch
+Patch10: samba-4.1.4-fix_dropbox_regression.patch
+Patch11: samba-4.1.4-fix_G_substitution_in_service_path.patch
+Patch12: samba-4.1.4-fix_winbind_100_percent_childs.patch
+Patch13: samba-4.1.4-Fix-segfault-in-smbd.patch
+Patch14: samba-4.1.4-fix_panic_when_smb2_brlock_times_out.patch
+Patch15: samba-4.1.5-fix_resource_leaks.patch
+Patch16: samba-4.1.5-fix_force_user_sec_ads.patch
+Patch17: samba-4.1.6-fix_one_way_trusts.patch
+Patch18: samba-4.1.6-fix_printer_list_memleadk.patch
+Patch19: samba-4.1.6-fix_pidl_install.patch
+Patch20: samba-4.1.6-fix_nbt_with_more_than_9_components.patch
+Patch21: samba-4.1.6-fix_ipv6_join.patch
+Patch22: samba-4.1.x-CVE-2013-4496.patch
+Patch23: samba-4.1.x-CVE-2013-6442.patch
+Patch24: samba-4.1.6-net_ads_kerberos_pac.patch
+Patch25: samba-4.1.6-fix_service_with_force_user.patch
+Patch26: samba-4.1.6-fix_fragmented_rpc_handling.patch
+Patch27: samba-4.1.7-make_pidl_lsa_struct_public.patch
+Patch28: samba-4.1.7-Make_daemons_systemd_aware.patch
+Patch29: samba-4.1.6-ipv6_workaround.patch
+
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 Requires(pre): /usr/sbin/groupadd
@@ -100,6 +131,14 @@ Requires: libwbclient = %{samba_depver}
 
 Provides: samba4 = %{samba_depver}
 Obsoletes: samba4 < %{samba_depver}
+
+# We don't build it outdated docs anymore
+Obsoletes: samba-doc
+# Is not supported yet
+Obsoletes: samba-domainjoin-gui
+# SWAT been deprecated and removed from samba
+Obsoletes: samba-swat
+Obsoletes: samba4-swat
 
 %if %with_clustering_support
 BuildRequires: ctdb-devel
@@ -126,13 +165,16 @@ BuildRequires: python-devel
 BuildRequires: python-tevent
 BuildRequires: quota-devel
 BuildRequires: readline-devel
+BuildRequires: systemd-devel
 BuildRequires: sed
 BuildRequires: zlib-devel >= 1.2.3
-BuildRequires: libbsd-devel
 %if %{with_vfs_glusterfs}
 BuildRequires: glusterfs-api-devel >= 3.4.0.16
 BuildRequires: glusterfs-devel >= 3.4.0.16
 %endif
+
+# pidl requirements
+BuildRequires: perl(Parse::Yapp)
 
 %if ! %with_internal_talloc
 %global libtalloc_version 2.0.7
@@ -266,7 +308,8 @@ Summary: Samba VFS module for GlusterFS
 Group: Applications/System
 Requires: glusterfs-api >= 3.4.0.16
 Requires: glusterfs >= 3.4.0.16
-Requires: samba = %{epoch}:%{samba_version}-%{release}
+Requires: %{name} = %{epoch}:%{samba_version}-%{release}
+Requires: %{name}-libs = %{epoch}:%{samba_version}-%{release}
 
 Obsoletes: samba-glusterfs
 Provides: samba-glusterfs
@@ -325,6 +368,8 @@ The libwbclient package contains the winbind client library from the Samba suite
 Summary: Developer tools for the winbind library
 Group: Development/Libraries
 Requires: libwbclient = %{samba_depver}
+Obsoletes: samba-winbind-devel
+Provides: samba-winbind-devel
 
 %description -n libwbclient-devel
 The libwbclient-devel package provides developer tools for the wbclient library.
@@ -359,7 +404,7 @@ Provides: samba4-pidl = %{samba_depver}
 Obsoletes: samba4-pidl < %{samba_depver}
 
 %description pidl
-The samba4-pidl package contains the Perl IDL compiler used by Samba
+The %{name}-pidl package contains the Perl IDL compiler used by Samba
 and Wireshark to parse IDL and similar protocols
 
 ### TEST
@@ -475,6 +520,37 @@ module necessary to communicate to the Winbind Daemon
 %prep
 %setup -q -n samba-%{version}%{pre_release}
 
+%patch0 -p1 -b .samba-4.1.1-Fix-memset-in-ntdb.patch
+%patch1 -p1 -b .samba-4.1.0-upn.patch
+%patch2 -p1 -b .samba-4.1.2-fix_strict_aliasing.patch
+%patch3 -p1 -b .samba-4.1.2-doc.patch
+%patch4 -p1 -b .samba-4.1.3-fix_grp_name_sub_in_template_homedir.patch
+%patch5 -p1 -b .samba-4.1.3-CVE-2013-4408.patch
+%patch6 -p1 -b .samba-4.1.3-fix_build_warnings.patch
+%patch7 -p1 -b .samba-4.1.2-winbind_cache_keysize.patch
+%patch8 -p1 -b .samba-4.1.3-CVE-2012-6150.patch
+%patch9 -p1 -b .samba-4.1.3-winbind_debug.patch
+%patch10 -p1 -b .samba-4.1.4-fix_dropbox_regression.patch
+%patch11 -p1 -b .samba-4.1.4-fix_G_substitution_in_service_path.patch
+%patch12 -p1 -b .samba-4.1.4-fix_winbind_100_percent_childs.patch
+%patch13 -p1 -b .samba-4.1.4-Fix-segfault-in-smbd.patch
+%patch14 -p1 -b .samba-4.1.4-fix_panic_when_smb2_brlock_times_out.patch
+%patch15 -p1 -b .samba-4.1.5-fix_resource_leaks.patch
+%patch16 -p1 -b .samba-4.1.5-fix_force_user_sec_ads.patch
+%patch17 -p1 -b .samba-4.1.6-fix_one_way_trusts.patch
+%patch18 -p1 -b .samba-4.1.6-fix_printer_list_memleadk.patch
+%patch19 -p1 -b .samba-4.1.6-fix_pidl_install.patch
+%patch20 -p1 -b .samba-4.1.6-fix_nbt_with_more_than_9_components.patch
+%patch21 -p1 -b .samba-4.1.6-fix_ipv6_join.patch
+%patch22 -p1 -b .samba-4.1.x-CVE-2013-4496.patch
+%patch23 -p1 -b .samba-4.1.x-CVE-2013-6442.patch
+%patch24 -p1 -b .samba-4.1.6-net_ads_kerberos_pac.patch
+%patch25 -p1 -b .samba-4.1.6-fix_service_with_force_user.patch
+%patch26 -p1 -b .samba-4.1.6-fix_fragmented_rpc_handling.patch
+%patch27 -p1 -b .samba-4.1.7-make_pidl_lsa_struct_public.patch
+%patch28 -p1 -b .samba-4.1.7-Make_daemons_systemd_aware.patch
+%patch29 -p1 -b .samba-4.1.6-ipv6_workaround.patch
+
 %build
 %global _talloc_lib ,talloc,pytalloc,pytalloc-util
 %global _tevent_lib ,tevent,pytevent
@@ -527,11 +603,13 @@ LDFLAGS="-Wl,-z,relro,-z,now" \
         --with-pammodulesdir=%{_libdir}/security \
         --with-lockdir=/var/lib/samba \
         --with-cachedir=/var/lib/samba \
+        --with-perl-vendordir=%{perl_vendorlib} \
         --disable-gnutls \
         --disable-rpath-install \
         --with-shared-modules=%{_samba4_modules} \
         --bundled-libraries=%{_samba4_libraries} \
         --with-pam \
+        --without-fam \
 %if (! %with_libsmbclient) || (! %with_libwbclient)
         --private-libraries=%{_samba4_private_libraries} \
 %endif
@@ -552,14 +630,11 @@ LDFLAGS="-Wl,-z,relro,-z,now" \
         --enable-selftest \
 %endif
 %if ! %with_pam_smbpass
-        --without-pam_smbpass
+        --without-pam_smbpass \
 %endif
+        --with-systemd
 
 make %{?_smp_mflags}
-
-# Build PIDL for installation into vendor directories before
-# 'make proto' gets to it.
-(cd pidl && %{__perl} Makefile.PL INSTALLDIRS=vendor )
 
 %install
 rm -rf %{buildroot}
@@ -578,13 +653,6 @@ install -d -m 0755 %{buildroot}/var/run/samba
 install -d -m 0755 %{buildroot}/var/run/winbindd
 install -d -m 0755 %{buildroot}/%{_libdir}/samba
 install -d -m 0755 %{buildroot}/%{_libdir}/pkgconfig
-
-# Undo the PIDL install, we want to try again with the right options.
-rm -rf %{buildroot}/%{_libdir}/perl5
-rm -rf %{buildroot}/%{_datadir}/perl5
-
-# Install PIDL.
-( cd pidl && make install PERL_INSTALL_ROOT=%{buildroot} )
 
 # Install other stuff
 install -d -m 0755 %{buildroot}%{_sysconfdir}/logrotate.d
@@ -620,7 +688,7 @@ install -m 0644 %{SOURCE200} packaging/README.dc-libs
 
 install -d -m 0755 %{buildroot}%{_unitdir}
 for i in nmb smb winbind ; do
-    cat packaging/systemd/$i.service | sed -e 's@Type=forking@Type=forking\nEnvironment=KRB5CCNAME=/run/samba/krb5cc_samba@g' >tmp$i.service
+    cat packaging/systemd/$i.service | sed -e 's@\[Service\]@[Service]\nEnvironment=KRB5CCNAME=/run/samba/krb5cc_samba@g' >tmp$i.service
     install -m 0644 tmp$i.service %{buildroot}%{_unitdir}/$i.service
 done
 
@@ -633,17 +701,9 @@ install -m 0755 packaging/NetworkManager/30-winbind-systemd \
 install -d -m 0755 %{buildroot}%{_libdir}/krb5/plugins/libkrb5
 touch %{buildroot}%{_libdir}/krb5/plugins/libkrb5/winbind_krb5_locator.so
 
-# Clean out crap left behind by the PIDL install.
-find %{buildroot} -type f -name .packlist -exec rm -f {} \;
-rm -f %{buildroot}%{perl_vendorlib}/wscript_build
-rm -rf %{buildroot}%{perl_vendorlib}/Parse/Yapp
-
 # This makes the right links, as rpmlint requires that
 # the ldconfig-created links be recorded in the RPM.
 /sbin/ldconfig -N -n %{buildroot}%{_libdir}
-
-# Fix up permission on perl install.
-%{_fixperms} %{buildroot}%{perl_vendorlib}
 
 %if %{with testsuite}
 %check
@@ -1435,10 +1495,41 @@ rm -rf %{buildroot}
 ### PIDL
 %files pidl
 %defattr(-,root,root,-)
-%{perl_vendorlib}/Parse/Pidl*
+%attr(755,root,root) %{_bindir}/pidl
+%dir %{perl_vendorlib}/Parse
+%{perl_vendorlib}/Parse/Pidl.pm
+%dir %{perl_vendorlib}/Parse/Pidl
+%{perl_vendorlib}/Parse/Pidl/CUtil.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4.pm
+%{perl_vendorlib}/Parse/Pidl/Expr.pm
+%{perl_vendorlib}/Parse/Pidl/ODL.pm
+%{perl_vendorlib}/Parse/Pidl/Typelist.pm
+%{perl_vendorlib}/Parse/Pidl/IDL.pm
+%{perl_vendorlib}/Parse/Pidl/Compat.pm
+%dir %{perl_vendorlib}/Parse/Pidl/Wireshark
+%{perl_vendorlib}/Parse/Pidl/Wireshark/Conformance.pm
+%{perl_vendorlib}/Parse/Pidl/Wireshark/NDR.pm
+%{perl_vendorlib}/Parse/Pidl/Dump.pm
+%dir %{perl_vendorlib}/Parse/Pidl/Samba3
+%{perl_vendorlib}/Parse/Pidl/Samba3/ServerNDR.pm
+%{perl_vendorlib}/Parse/Pidl/Samba3/ClientNDR.pm
+%dir %{perl_vendorlib}/Parse/Pidl/Samba4
+%{perl_vendorlib}/Parse/Pidl/Samba4/Header.pm
+%dir %{perl_vendorlib}/Parse/Pidl/Samba4/COM
+%{perl_vendorlib}/Parse/Pidl/Samba4/COM/Header.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/COM/Proxy.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/COM/Stub.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/Python.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/Template.pm
+%dir %{perl_vendorlib}/Parse/Pidl/Samba4/NDR
+%{perl_vendorlib}/Parse/Pidl/Samba4/NDR/Server.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/NDR/Client.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/NDR/Parser.pm
+%{perl_vendorlib}/Parse/Pidl/Samba4/TDR.pm
+%{perl_vendorlib}/Parse/Pidl/NDR.pm
+%{perl_vendorlib}/Parse/Pidl/Util.pm
 %{_mandir}/man1/pidl*
 %{_mandir}/man3/Parse::Pidl*
-%attr(755,root,root) %{_bindir}/pidl
 
 ### PYTHON
 %files python
@@ -1522,6 +1613,117 @@ rm -rf %{buildroot}
 %{_mandir}/man8/pam_winbind.8*
 
 %changelog
+* Thu Apr 03 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-31
+- resolves: #1082653 - Add IPv6 workaround for MIT kerberos.
+
+* Thu Apr 03 2014 - Alexander Bokovoy <abokovoy@redhat.com> - 4.1.1-30
+- resolves: #1083859  - Force KRB5CCNAME in Samba systemd units.
+- related: #1082598 - Fully enables systemd integration.
+
+* Tue Apr 01 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-29
+- resolves: #1082598 - Add missing BuildRequires for systemd-devel.
+
+* Wed Mar 26 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-28
+- resolves: #1077918 - Make daemons systemd aware.
+
+* Mon Mar 24 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-27
+- resolves: #1077857 - Fix internal error received while adding trust.
+
+* Fri Mar 21 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-26
+- resolves: #1079008 - Fix fragmented rpc handling.
+
+* Tue Mar 18 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-25
+- resolves: #1077651 - Fix 'force user' option for shares.
+
+* Wed Mar 12 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-24
+- resolves: #1053748 - Enhance "net ads kerberos pac" tool.
+
+* Mon Mar 10 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-23
+- resolves: #1072804 - Fix CVE-2013-4496.
+- resolves: #1072804 - Fix CVE-2013-6442.
+
+* Fri Mar 07 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-22
+- resolves: #1024788 - Fix joining over IPv6.
+
+* Tue Mar 04 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-21
+- resolves: #1066536 - Fix NBT queries with more than 9 or more components.
+
+* Thu Feb 27 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-20
+- resolves: #1070692 - Don't package perl(Parse::Yapp::Driver)
+
+* Tue Feb 25 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-19
+- related: #1067606 - Add missing directories.
+
+* Tue Feb 25 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-18
+- related: #1067606 - Fix installation of pidl files.
+
+* Tue Feb 25 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-17
+- resolves: #1067606 - Fix wbinfo with one-way trust.
+- resolves: #1069569 - Fix memory leak reading the printer list.
+
+* Thu Feb 20 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-16
+- resolves: #1063186 - Fix force_user with security=ads.
+
+* Wed Feb 05 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-15
+- resolves: #1029001 - Fix force_user with security=ads.
+
+* Tue Jan 28 2014 Daniel Mach <dmach@redhat.com> - 4.1.1-14
+- Mass rebuild 2014-01-24
+
+* Mon Jan 13 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-13
+- resolves: #1051582 - Fix warnings an resource leaks reported by rpmdiff.
+
+* Fri Jan 10 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-12
+- resolves: #1050886 - Fix full CPU utilization in winbindd.
+- resolves: #1051400 - Fix segfault in smbd.
+- resolves: #1051402 - Fix SMB2 server panic when a smb2 brlock times out.
+
+* Thu Jan 09 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-11
+- resolves: #1042845 - Do not build with libbsd.
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 4.1.1-10
+- Mass rebuild 2013-12-27
+
+* Wed Dec 11 2013 - Andreas Schneider <asn@redhat.com> - 4.1.1-9
+- resolves: #1033122 - Fix dropbox regression.
+- resolves: #1040464 - Fix %G substituion for config parameters.
+
+* Wed Dec 11 2013 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-8
+- resolves: #1040052 - Fix winbind debug message NULL pointer derreference.
+
+* Mon Dec 09 2013 - Andreas Schneider <asn@redhat.com> - 4.1.1-7
+- resolves: #1039499 - Fix CVE-2012-6150.
+
+* Fri Nov 29 2013 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-6
+- resolves: #1033109 - Fix winbind cache keysize limitations.
+
+* Wed Nov 27 2013 - Andreas Schneider <asn@redhat.com> - 4.1.1-5
+- resolves: #1034160 - Make sure we don't build the fam notify module.
+
+* Mon Nov 25 2013 - Andreas Schneider <asn@redhat.com> - 4.1.1-4
+- resolves: #1034048 - Fix group name substitution in template homedir.
+- resolves: #1018041 - Fix CVE-2013-4408.
+- related: #884169 - Fix several covscan warnings.
+
+* Mon Nov 18 2013 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-3
+- resolves: #948509 - Fix manpage correctness.
+
+* Fri Nov 15 2013 - Andreas Schneider <asn@redhat.com> - 4.1.1-2
+- related: #884169 - Fix strict aliasing warnings.
+
+* Mon Nov 11 2013 - Andreas Schneider <asn@redhat.com> - 4.1.1-1
+- resolves: #1024543 - Fix CVE-2013-4475.
+- Update to Samba 4.1.1.
+
+* Mon Nov 11 2013 - Andreas Schneider <asn@redhat.com> - 4.1.0-5
+- related: #884169 - Fix the upgrade path.
+
+* Wed Oct 30 2013 - Andreas Schneider <asn@redhat.com> - 4.1.0-4
+- related: #884169 - Add direct dependency to samba-libs in the
+                     glusterfs package.
+- resolves: #996567 - Fix userPrincipalName composition.
+- related: #884169 - Fix memset call with zero length in in ntdb.
+
 * Fri Oct 18 2013 - Andreas Schneider <asn@redhat.com> - 4.1.0-3
 - resolves: #1019384 - Build glusterfs VFS plguin.
 
