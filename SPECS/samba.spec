@@ -1,7 +1,7 @@
 # Set --with testsuite or %bcond_without to run the Samba torture testsuite.
 %bcond_with testsuite
 
-%define main_release 31
+%define main_release 33
 
 %define samba_version 4.1.1
 %define talloc_version 2.0.8
@@ -625,6 +625,9 @@ LDFLAGS="-Wl,-z,relro,-z,now" \
 %if %with_clustering_support
         --with-cluster-support \
         --enable-old-ctdb \
+%endif
+%if %with_profiling
+        --with-profiling-data \
 %endif
 %if %{with testsuite}
         --enable-selftest \
@@ -1613,6 +1616,12 @@ rm -rf %{buildroot}
 %{_mandir}/man8/pam_winbind.8*
 
 %changelog
+* Mon May 05 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-33
+- related: #717484 - Add missing configure line to enable profiling data support.
+
+* Tue Apr 22 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-32
+- related: #1082653 - Reuse IPv6 address during the AD domain join.
+
 * Thu Apr 03 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-31
 - resolves: #1082653 - Add IPv6 workaround for MIT kerberos.
 
