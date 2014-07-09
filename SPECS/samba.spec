@@ -1,7 +1,7 @@
 # Set --with testsuite or %bcond_without to run the Samba torture testsuite.
 %bcond_with testsuite
 
-%define main_release 33
+%define main_release 35
 
 %define samba_version 4.1.1
 %define talloc_version 2.0.8
@@ -115,6 +115,9 @@ Patch26: samba-4.1.6-fix_fragmented_rpc_handling.patch
 Patch27: samba-4.1.7-make_pidl_lsa_struct_public.patch
 Patch28: samba-4.1.7-Make_daemons_systemd_aware.patch
 Patch29: samba-4.1.6-ipv6_workaround.patch
+Patch30: samba-CVE-2014-0244.patch
+Patch31: samba-CVE-2014-3493.patch
+Patch32: samba-CVE-2014-0178.patch
 
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -550,6 +553,9 @@ module necessary to communicate to the Winbind Daemon
 %patch27 -p1 -b .samba-4.1.7-make_pidl_lsa_struct_public.patch
 %patch28 -p1 -b .samba-4.1.7-Make_daemons_systemd_aware.patch
 %patch29 -p1 -b .samba-4.1.6-ipv6_workaround.patch
+%patch30 -p1 -b .samba-CVE-2014-0244.patch
+%patch31 -p1 -b .samba-CVE-2014-3493.patch
+%patch32 -p1 -b .samba-CVE-2014-0178.patch
 
 %build
 %global _talloc_lib ,talloc,pytalloc,pytalloc-util
@@ -1616,6 +1622,11 @@ rm -rf %{buildroot}
 %{_mandir}/man8/pam_winbind.8*
 
 %changelog
+* Wed Jun 11 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-35
+- resolves: #1105504 - CVE-2014-0244: DoS in nmbd.
+- resolves: #1108844 - CVE-2014-3493: DoS in smbd with unicode path names.
+- resolves: #1105573 - CVE-2014-0178: Uninitialized memory exposure.
+
 * Mon May 05 2014 - Andreas Schneider <asn@redhat.com> - 4.1.1-33
 - related: #717484 - Add missing configure line to enable profiling data support.
 
