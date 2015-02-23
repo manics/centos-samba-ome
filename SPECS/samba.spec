@@ -1,7 +1,7 @@
 # Set --with testsuite or %bcond_without to run the Samba torture testsuite.
 %bcond_with testsuite
 
-%define main_release 38
+%define main_release 38.1
 
 %define samba_version 4.1.1
 %define talloc_version 2.0.8
@@ -120,7 +120,8 @@ Patch31: samba-CVE-2014-3493.patch
 Patch32: samba-CVE-2014-0178.patch
 Patch33: samba-4.1.9-file_open.patch
 Patch34: samba-CVE-2014-3560.patch
-Patch35: samba-4.1.14-nsswitch-skip_unmapped_groups.patch
+Patch35: samba-4.1.x-CVE-2015-0240.patch
+Patch36: samba-4.1.14-nsswitch-skip_unmapped_groups.patch
 
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -561,7 +562,8 @@ module necessary to communicate to the Winbind Daemon
 %patch32 -p1 -b .samba-CVE-2014-0178.patch
 %patch33 -p1 -b .samba-4.1.9-file_open.patch
 %patch34 -p1 -b .samba-CVE-2014-3560.patch
-%patch35 -p1 -b .samba-4.1.14-nsswitch-skip_unmapped_groups.patch
+%patch35 -p1 -b .samba-4.1.x-CVE-2015-0240.patch
+%patch36 -p1 -b .samba-4.1.14-nsswitch-skip_unmapped_groups.patch
 
 %build
 %global _talloc_lib ,talloc,pytalloc,pytalloc-util
@@ -1628,8 +1630,11 @@ rm -rf %{buildroot}
 %{_mandir}/man8/pam_winbind.8*
 
 %changelog
-* Thu Feb 05 2015 - Simon Li <spli@dundee.ac.uk> - 4.1.1-38
+* Mon Feb 23 2015 - Simon Li <spli@dundee.ac.uk> - 4.1.1-38.1
 - Patch to handle unmapped windbind groups
+
+* Thu Feb 19 2015 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-38
+- resolves: #1194132 - CVE-2015-0240: RCE in netlogon server.
 
 * Fri Aug 01 2014 - Guenther Deschner <gdeschner@redhat.com> - 4.1.1-37
 - resolves: #1126013 - CVE-2014-3560: remote code execution in nmbd.
